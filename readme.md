@@ -6,7 +6,7 @@ This is a simple ORM/ODM for storing and fetching data in PouchDB using Zod for 
 import PouchDB from 'pouchdb'
 import pouchFind from 'pouchdb-find'
 import {z} from 'zod'
-import {Collection} from 'pouchdb-orm'
+import {Collection} from '@strangebytes/pouchdb-orm'
 
 const pouchDB = new PouchDB('example')
 PouchDB.plugin(pouchFind)
