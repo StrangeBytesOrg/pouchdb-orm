@@ -89,7 +89,7 @@ describe('PouchORM', () => {
             expect(typeof user._rev).toBe('string')
         })
 
-        test('should update an existing document', async () => {
+        test('should update an existing document when _rev is supplied', async () => {
             const userCollection = new Collection(pouchDb, 'users', UserSchema)
 
             const user = await userCollection.put({
@@ -103,6 +103,22 @@ describe('PouchORM', () => {
             })
             expect(updatedUser._rev).not.toBe(user._rev)
             expect(updatedUser._rev).toStartWith('2-')
+        })
+
+        test('should reject update when _rev is missing', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            const user = await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+
+            expect(
+                userCollection.put({
+                    _id: 'john-doe',
+                    name: 'John Doe',
+                }),
+            ).rejects.toThrowError('Document update conflict')
         })
 
         test('should return all documents with the same $collection', async () => {
@@ -139,6 +155,41 @@ describe('PouchORM', () => {
             const user = await userCollection.findById('john-doe')
             expect(user._id).toBe('john-doe')
             expect(user.name).toBe('John Doe')
+        })
+
+        test('should throw when document not found', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+
+            expect(userCollection.findById('jane-doe')).rejects.toThrowError('missing')
+        })
+
+        test('should delete document by id', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+
+            await userCollection.removeById('john-doe')
+
+            expect(userCollection.findById('john-doe')).rejects.toThrowError('missing')
+        })
+
+        test('should throw when document not found for deletion', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+
+            expect(userCollection.removeById('jane-doe')).rejects.toThrowError('missing')
         })
     })
 })

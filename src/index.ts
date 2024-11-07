@@ -61,4 +61,16 @@ export class Collection<T extends z.ZodSchema> {
         const doc = await this.database.get(id)
         return this.schema.parse(doc)
     }
+
+    /**
+     * Deletes a document by its ID.
+     *
+     * @param id - The unique identifier of the document to delete
+     * @returns A promise that resolves when the document is deleted
+     * @throws Will throw if the document doesn't exist
+     */
+    async removeById(id: string): Promise<void> {
+        const doc = await this.database.get(id)
+        this.database.remove(doc)
+    }
 }
