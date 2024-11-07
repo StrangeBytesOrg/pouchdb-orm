@@ -1,0 +1,27 @@
+{
+    "name": "pouchdb-orm",
+    "version": "0.0.1",
+    "type": "module",
+    "scripts": {
+        "test": "bun test"
+    },
+    "keywords": [
+        "pouchdb",
+        "orm"
+    ],
+    "author": "Strange Bytes",
+    "license": "MIT",
+    "description": "A simple ORM for validating and storing data in PouchDB",
+    "devDependencies": {
+        "@types/bun": "^1.1.13",
+        "@types/pouchdb": "^6.4.2",
+        "pouchdb": "^9.0.0",
+        "pouchdb-adapter-memory": "^9.0.0",
+        "pouchdb-find": "^9.0.0",
+        "prettier": "^3.3.3",
+        "zod": "^3.23.8"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
