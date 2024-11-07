@@ -13,16 +13,16 @@ PouchDB.plugin(pouchFind)
 
 // All schema's require _id and _rev
 const baseSchema = z.object({
-	_id: z.string(),
-	_rev: z.string().optional()
+    _id: z.string(),
+    _rev: z.string().optional()
 })
 const exampleSchema = baseSchema.extend({
-	foo: z.string(),
+    foo: z.string(),
 })
 const exampleCollection = new Collection(pouchDB, 'example', exampleSchema)
 const exampleDocument = await exampleCollection.create({
-	_id: 'hello',
-	foo: 'bar',
+    _id: 'hello',
+    foo: 'bar',
 })
 ```
 
