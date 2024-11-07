@@ -20,7 +20,7 @@ const exampleSchema = baseSchema.extend({
     foo: z.string(),
 })
 const exampleCollection = new Collection(pouchDB, 'example', exampleSchema)
-const exampleDocument = await exampleCollection.create({
+const exampleDocument = await exampleCollection.put({
     _id: 'hello',
     foo: 'bar',
 })
