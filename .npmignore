@@ -1,4 +1,10 @@
+# Directories
 docs
 archive
-src
+
+# Uneccesary files
+src/**/*.test.ts
+
+# Non Node files
 bun.lockb
+.prettierrc.json
