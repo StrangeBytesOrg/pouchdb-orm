@@ -20,10 +20,34 @@ const exampleSchema = baseSchema.extend({
     foo: z.string(),
 })
 const exampleCollection = new Collection(pouchDB, 'example', exampleSchema)
-const exampleDocument = await exampleCollection.put({
+
+// Create a document
+const {ok, id, rev} = await exampleCollection.put({
     _id: 'hello',
     foo: 'bar',
 })
+
+// Update a document by specifying id and revision
+await exampleCollection.put({
+    _id: id,
+    _rev: rev,
+    foo: 'baz',
+})
+
+// Find all documents in a collection
+const examples = await exampleCollection.find()
+
+// Find a document
+const example = await exampleCollection.findById('hello')
+
+// Update an existing document without needing to manually pass a revision
+await exampleCollection.update({
+    _id: 'hello',
+    foo: 'something else',
+})
+
+// Remove a document by ID
+await exampleCollection.removeById('hello')
 ```
 
 ## Under the hood
