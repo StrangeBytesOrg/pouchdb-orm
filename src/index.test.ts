@@ -90,6 +90,19 @@ describe('PouchORM', () => {
             expect(id).toBeString()
             expect(rev).toBeString()
         })
+
+        test('automatically add $collection to document', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            const {id, rev} = await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+
+            const doc = await pouchDb.get(id)
+            // @ts-expect-error PouchDB doesn't have types for the $collection property
+            expect(doc.$collection).toBe('users')
+        })
     })
 
     describe('document fetching', () => {
@@ -139,6 +152,25 @@ describe('PouchORM', () => {
 
             expect(userCollection.findById('jane-doe')).rejects.toThrowError('missing')
         })
+
+        test('does not return documents from other collections', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+            const OtherSchema = BaseSchema.extend({other: z.string()})
+            const otherCollection = new Collection(pouchDb, 'other', OtherSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await otherCollection.put({
+                _id: 'new-thing',
+                other: 'thing',
+            })
+
+            const users = await userCollection.find()
+            expect(users).toHaveLength(1)
+            expect(users[0]._id).toBe('john-doe')
+        })
     })
 
     describe('document updating', () => {
@@ -158,6 +190,25 @@ describe('PouchORM', () => {
             expect(updateRev).not.toBe(rev)
             expect(updateRev).toStartWith('2-')
             expect(updateId).toBe(id)
+        })
+
+        test('adds $collection to document on update', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            const {id, rev} = await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+
+            await userCollection.update({
+                _id: id,
+                _rev: rev,
+                name: 'Something Else',
+            })
+
+            const doc = await pouchDb.get(id)
+            // @ts-expect-error PouchDB doesn't have types for the $collection property
+            expect(doc.$collection).toBe('users')
         })
 
         test('reject put when _rev is missing', async () => {

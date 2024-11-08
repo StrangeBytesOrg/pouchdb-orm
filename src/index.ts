@@ -42,6 +42,7 @@ export class Collection<T extends z.ZodSchema> {
     async update(data: z.input<T>, options: PouchDB.Core.PutOptions = {}): Promise<PouchDB.Core.Response> {
         const doc = this.schema.parse(data)
         const existing = await this.database.get(doc._id)
+        doc.$collection = this.collectionName
         doc._rev = existing._rev
         return await this.database.put(doc, options)
     }
