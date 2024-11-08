@@ -35,3 +35,5 @@ Collections add a type of "$collection" in order to enable querying by collectio
 - [x] Fetching documents with validation
 - [ ] Support Mango queries
 - [ ] Migration System
+- [ ] Fancy data viewer
+- [ ] Graceful error handling
