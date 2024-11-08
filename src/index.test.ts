@@ -38,12 +38,12 @@ describe('PouchORM', () => {
         test('create document with valid data', async () => {
             const userCollection = new Collection(pouchDb, 'users', UserSchema)
 
-            const user = await userCollection.put({
+            const {ok} = await userCollection.put({
                 _id: 'john-doe',
                 name: 'John Doe',
             })
 
-            expect(user.name).toBe('John Doe')
+            expect(ok).toBe(true)
         })
 
         test('reject invalid document', async () => {
@@ -77,16 +77,18 @@ describe('PouchORM', () => {
             ).rejects.toThrowError('_id is required for puts')
         })
 
-        test('return document with _rev', async () => {
+        test('return an id and rev on create', async () => {
             const userCollection = new Collection(pouchDb, 'users', UserSchema)
 
-            const user = await userCollection.put({
+            const {id, rev} = await userCollection.put({
                 _id: 'john-doe',
                 name: 'John Doe',
             })
 
-            expect(user._rev).toBeDefined()
-            expect(typeof user._rev).toBe('string')
+            expect(id).toBeDefined()
+            expect(rev).toBeDefined()
+            expect(id).toBeString()
+            expect(rev).toBeString()
         })
     })
 
@@ -140,24 +142,25 @@ describe('PouchORM', () => {
     })
 
     describe('document updating', () => {
-        test('update an existing document when _rev is supplied', async () => {
+        test('update an existing document using "put" when _rev is supplied', async () => {
             const userCollection = new Collection(pouchDb, 'users', UserSchema)
 
-            const user = await userCollection.put({
+            const {id, rev} = await userCollection.put({
                 _id: 'john-doe',
                 name: 'John Doe',
             })
 
-            const updatedUser = await userCollection.put({
-                _id: user._id,
-                _rev: user._rev,
+            const {id: updateId, rev: updateRev} = await userCollection.put({
+                _id: id,
+                _rev: rev,
                 name: 'Something Else',
             })
-            expect(updatedUser._rev).not.toBe(user._rev)
-            expect(updatedUser._rev).toStartWith('2-')
+            expect(updateRev).not.toBe(rev)
+            expect(updateRev).toStartWith('2-')
+            expect(updateId).toBe(id)
         })
 
-        test('reject update when _rev is missing', async () => {
+        test('reject put when _rev is missing', async () => {
             const userCollection = new Collection(pouchDb, 'users', UserSchema)
 
             await userCollection.put({
@@ -171,6 +174,32 @@ describe('PouchORM', () => {
                     name: 'John Doe',
                 }),
             ).rejects.toThrowError('Document update conflict')
+        })
+
+        test('update an existing document using "update"', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            const {ok} = await userCollection.update({
+                _id: 'john-doe',
+                name: 'Something Else',
+            })
+
+            expect(ok).toBe(true)
+        })
+
+        test('throw when document not found for update', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            expect(
+                userCollection.update({
+                    _id: 'john-doe',
+                    name: 'Something Else',
+                }),
+            ).rejects.toThrowError('missing')
         })
     })
 

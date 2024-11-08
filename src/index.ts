@@ -7,7 +7,7 @@ import type pouchDB from 'pouchdb'
 
 /** A strongly-typed collection wrapper for PouchDB documents validated by Zod schemas. */
 export class Collection<T extends z.ZodSchema> {
-    /** Creates a new typed collection instance.
+    /** Create a new typed collection instance.
      * @param database - The PouchDB database instance to operate on
      * @param collectionName - A unique identifier for this collection, used to segregate documents
      * @param schema - A Zod schema that defines the structure and validation of documents in this collection
@@ -19,25 +19,36 @@ export class Collection<T extends z.ZodSchema> {
     ) {}
 
     /**
-     * Stores a document in the database after validating it against the collection's schema.
+     * Store a document in the database after validating it against the collection's schema.
      * Automatically adds collection metadata to the document.
-     *
      * @param data - The document data to store, must conform to the collection's schema
-     * @returns A promise that resolves to the validated document with its revision ID
+     * @param options - Additional options to pass to PouchDB's `put` method
+     * @returns A promise that resolves to the result of the `put` operation
      * @throws Will throw if the document fails schema validation
      */
-    async put(data: z.input<T>): Promise<z.infer<T>> {
+    async put(data: z.input<T>, options: PouchDB.Core.PutOptions = {}) {
         const doc = this.schema.parse(data)
         doc.$collection = this.collectionName
-        const {rev} = await this.database.put(doc)
-        doc._rev = rev
-        return doc
+        return await this.database.put(doc, options)
     }
 
     /**
-     * Retrieves all documents belonging to this collection.
+     * Update an existing document
+     * @param data - The document data to store, must conform to the collection's schema
+     * @param options - Additional options to pass to PouchDB's `put` method
+     * @returns A promise that resolves to the result of the `put` operation
+     * @throws Will throw if the data fails schema validation or the document doesn't exist
+     */
+    async update(data: z.input<T>, options: PouchDB.Core.PutOptions = {}) {
+        const doc = this.schema.parse(data)
+        const existing = await this.database.get(doc._id)
+        doc._rev = existing._rev
+        return await this.database.put(doc, options)
+    }
+
+    /**
+     * Retrieve all documents belonging to this collection.
      * Each document is validated against the collection's schema before being returned.
-     *
      * @returns A promise that resolves to an array of validated documents
      * @throws Will throw if any retrieved documents fail schema validation
      */
@@ -52,7 +63,6 @@ export class Collection<T extends z.ZodSchema> {
 
     /**
      * Retrieves a single document by its ID and validates it against the collection's schema.
-     *
      * @param id - The unique identifier of the document to retrieve
      * @returns A promise that resolves to the validated document
      * @throws Will throw if the document doesn't exist or fails schema validation
@@ -63,8 +73,7 @@ export class Collection<T extends z.ZodSchema> {
     }
 
     /**
-     * Deletes a document by its ID.
-     *
+     * Delete a document by its ID.
      * @param id - The unique identifier of the document to delete
      * @returns A promise that resolves when the document is deleted
      * @throws Will throw if the document doesn't exist
