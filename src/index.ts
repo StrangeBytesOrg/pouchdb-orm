@@ -26,7 +26,7 @@ export class Collection<T extends z.ZodSchema> {
      * @returns A promise that resolves to the result of the `put` operation
      * @throws Will throw if the document fails schema validation
      */
-    async put(data: z.input<T>, options: PouchDB.Core.PutOptions = {}) {
+    async put(data: z.input<T>, options: PouchDB.Core.PutOptions = {}): Promise<PouchDB.Core.Response> {
         const doc = this.schema.parse(data)
         doc.$collection = this.collectionName
         return await this.database.put(doc, options)
@@ -39,7 +39,7 @@ export class Collection<T extends z.ZodSchema> {
      * @returns A promise that resolves to the result of the `put` operation
      * @throws Will throw if the data fails schema validation or the document doesn't exist
      */
-    async update(data: z.input<T>, options: PouchDB.Core.PutOptions = {}) {
+    async update(data: z.input<T>, options: PouchDB.Core.PutOptions = {}): Promise<PouchDB.Core.Response> {
         const doc = this.schema.parse(data)
         const existing = await this.database.get(doc._id)
         doc._rev = existing._rev
