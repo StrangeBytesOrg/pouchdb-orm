@@ -1,5 +1,5 @@
 import {expect, test, describe, beforeEach, afterEach} from 'bun:test'
-import {z} from 'zod'
+import {z, ZodError} from 'zod'
 import PouchDB from 'pouchdb'
 import adapterMemory from 'pouchdb-adapter-memory'
 import find from 'pouchdb-find'
@@ -142,6 +142,26 @@ describe('PouchORM', () => {
             expect(user.name).toBe('John Doe')
         })
 
+        test('find documents using selectors', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await userCollection.put({
+                _id: 'jane-doe',
+                name: 'Jane Doe',
+            })
+
+            const users = await userCollection.find({
+                name: 'John Doe',
+            })
+            expect(users).toHaveLength(1)
+            expect(users[0]._id).toBe('john-doe')
+            expect(users[0].name).toBe('John Doe')
+        })
+
         test('throw when document not found', async () => {
             const userCollection = new Collection(pouchDb, 'users', UserSchema)
 
@@ -170,6 +190,75 @@ describe('PouchORM', () => {
             const users = await userCollection.find()
             expect(users).toHaveLength(1)
             expect(users[0]._id).toBe('john-doe')
+        })
+
+        test('does not return documents from other collections with selectors', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+            const OtherSchema = BaseSchema.extend({other: z.string()})
+            const otherCollection = new Collection(pouchDb, 'other', OtherSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await otherCollection.put({
+                _id: 'new-thing',
+                other: 'thing',
+            })
+
+            // @ts-expect-error Intentionally invalid selector
+            const users = await userCollection.find({other: 'thing'})
+            // @ts-expect-error Intentionally invalid selector
+            const otherThings = await otherCollection.find({name: 'John Doe'})
+            expect(users).toHaveLength(0)
+            expect(otherThings).toHaveLength(0)
+        })
+
+        test('does not return deleted documents', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await userCollection.put({
+                _id: 'jane-doe',
+                name: 'Jane Doe',
+            })
+            await userCollection.removeById('john-doe')
+
+            const users = await userCollection.find()
+            expect(users).toHaveLength(1)
+            expect(users[0]._id).toBe('jane-doe')
+        })
+
+        test('throws when getting documents from other collections', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+            const OtherSchema = BaseSchema.extend({other: z.string()})
+            const otherCollection = new Collection(pouchDb, 'other', OtherSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await otherCollection.put({
+                _id: 'new-thing',
+                other: 'thing',
+            })
+
+            expect(userCollection.findById('new-thing')).rejects.toThrowError(ZodError)
+        })
+
+        test('throws when getting deleted documents by id', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await userCollection.removeById('john-doe')
+
+            expect(userCollection.findById('john-doe')).rejects.toThrowError('missing')
         })
     })
 

@@ -50,13 +50,15 @@ export class Collection<T extends z.ZodSchema> {
     /**
      * Retrieve all documents belonging to this collection.
      * Each document is validated against the collection's schema before being returned.
+     * @param selectors - Optional selectors to filter the documents by
      * @returns A promise that resolves to an array of validated documents
      * @throws Will throw if any retrieved documents fail schema validation
      */
-    async find(): Promise<z.infer<T>[]> {
+    async find(selectors: Partial<Record<keyof z.infer<T>, any>> = {}): Promise<z.infer<T>[]> {
         const {docs} = await this.database.find({
             selector: {
                 $collection: this.collectionName,
+                ...selectors,
             },
         })
         return docs.map((doc) => this.schema.parse(doc))

@@ -34,7 +34,9 @@ await exampleCollection.put({
     foo: 'baz',
 })
 
-// Find all documents in a collection
+// Find documents in a collection
+// See documentation in PouchDB/CouchDB for querying
+// https://pouchdb.com/api.html#query_index
 const examples = await exampleCollection.find()
 
 // Find a document
