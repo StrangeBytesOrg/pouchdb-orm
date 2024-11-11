@@ -50,15 +50,21 @@ export class Collection<T extends z.ZodSchema> {
     /**
      * Retrieve all documents belonging to this collection.
      * Each document is validated against the collection's schema before being returned.
-     * @param selectors - Optional selectors to filter the documents by
+     * @param options - The find request options following PouchDB.Find
      * @returns A promise that resolves to an array of validated documents
      * @throws Will throw if any retrieved documents fail schema validation
      */
-    async find(selectors: Partial<Record<keyof z.infer<T>, any>> = {}): Promise<z.infer<T>[]> {
+    async find(
+        options?: Omit<PouchDB.Find.FindRequest<{}>, 'selector'> & {
+            selector?: Partial<Record<keyof z.infer<T>, any>>
+        },
+    ): Promise<z.infer<T>[]> {
+        if (options?.fields) options.fields = [...options.fields, '_id', '_rev']
         const {docs} = await this.database.find({
+            ...options,
             selector: {
+                ...options?.selector,
                 $collection: this.collectionName,
-                ...selectors,
             },
         })
         return docs.map((doc) => this.schema.parse(doc))

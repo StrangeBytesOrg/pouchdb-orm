@@ -155,7 +155,9 @@ describe('PouchORM', () => {
             })
 
             const users = await userCollection.find({
-                name: 'John Doe',
+                selector: {
+                    name: 'John Doe',
+                },
             })
             expect(users).toHaveLength(1)
             expect(users[0]._id).toBe('john-doe')
@@ -194,7 +196,7 @@ describe('PouchORM', () => {
 
         test('does not return documents from other collections with selectors', async () => {
             const userCollection = new Collection(pouchDb, 'users', UserSchema)
-            const OtherSchema = BaseSchema.extend({other: z.string()})
+            const OtherSchema = UserSchema.extend({other: z.string()})
             const otherCollection = new Collection(pouchDb, 'other', OtherSchema)
 
             await userCollection.put({
@@ -202,16 +204,17 @@ describe('PouchORM', () => {
                 name: 'John Doe',
             })
             await otherCollection.put({
-                _id: 'new-thing',
+                _id: 'jane-doe',
+                name: 'Jane Doe',
                 other: 'thing',
             })
 
-            // @ts-expect-error Intentionally invalid selector
-            const users = await userCollection.find({other: 'thing'})
-            // @ts-expect-error Intentionally invalid selector
-            const otherThings = await otherCollection.find({name: 'John Doe'})
-            expect(users).toHaveLength(0)
+            const otherThings = await otherCollection.find({selector: {name: 'John Doe'}})
             expect(otherThings).toHaveLength(0)
+
+            // @ts-expect-error Intentionally invalid selector
+            const users = await userCollection.find({selector: {other: 'thing'}})
+            expect(users).toHaveLength(0)
         })
 
         test('does not return deleted documents', async () => {
@@ -259,6 +262,104 @@ describe('PouchORM', () => {
             await userCollection.removeById('john-doe')
 
             expect(userCollection.findById('john-doe')).rejects.toThrowError('missing')
+        })
+
+        test('return specified fields', async () => {
+            const extendedSchema = UserSchema.extend({
+                age: z.number().optional(),
+                height: z.number().optional(),
+            })
+            const userCollection = new Collection(pouchDb, 'users', extendedSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+                age: 69,
+                height: 420,
+            })
+
+            const users = await userCollection.find({fields: ['name']})
+            expect(users).toHaveLength(1)
+            expect(users[0]._id).toBe('john-doe')
+            expect(users[0]._rev).toBeString()
+            expect(users[0].name).toBe('John Doe')
+            expect(users[0].age).toBeUndefined()
+            expect(users[0].height).toBeUndefined()
+        })
+
+        test('sort documents', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+            await pouchDb.createIndex({index: {ddoc: 'name', fields: ['name']}})
+
+            await userCollection.put({
+                _id: 'zon-doe',
+                name: 'Zon Doe',
+            })
+            await userCollection.put({
+                _id: 'anne-doe',
+                name: 'Anne Doe',
+            })
+
+            const usersDesc = await userCollection.find({
+                selector: {name: {$exists: true}},
+                sort: [{name: 'desc'}],
+            })
+            expect(usersDesc).toHaveLength(2)
+            expect(usersDesc[0].name).toBe('Zon Doe')
+            expect(usersDesc[1].name).toBe('Anne Doe')
+        })
+
+        test('limit documents', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await userCollection.put({
+                _id: 'jane-doe',
+                name: 'Jane Doe',
+            })
+
+            const users = await userCollection.find({limit: 1})
+            expect(users).toHaveLength(1)
+        })
+
+        test('skip documents', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await userCollection.put({
+                _id: 'jane-doe',
+                name: 'Jane Doe',
+            })
+
+            const users = await userCollection.find({skip: 1})
+            expect(users).toHaveLength(1)
+            expect(users[0]._id).toBe('john-doe')
+        })
+
+        test('use index', async () => {
+            const userCollection = new Collection(pouchDb, 'users', UserSchema)
+            await pouchDb.createIndex({index: {ddoc: 'name', fields: ['name']}})
+
+            await userCollection.put({
+                _id: 'john-doe',
+                name: 'John Doe',
+            })
+            await userCollection.put({
+                _id: 'jane-doe',
+                name: 'Jane Doe',
+            })
+
+            const users = await userCollection.find({
+                use_index: 'name',
+                selector: {name: 'John Doe'},
+            })
+            expect(users).toHaveLength(1)
         })
     })
 
