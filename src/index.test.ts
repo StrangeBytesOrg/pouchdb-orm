@@ -75,6 +75,21 @@ describe('document creation', () => {
         ).rejects.toThrowError('_id is required for puts')
     })
 
+    test('remove extra fields', async () => {
+        const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+        userCollection.put({
+            _id: 'john-doe',
+            name: 'John Doe',
+            // @ts-expect-error Intentionally invalid extra field
+            foo: 'bar',
+        })
+
+        const doc = await userCollection.findById('john-doe')
+        expect(doc).not.toHaveProperty('foo')
+        expect(doc).toHaveProperty('name')
+    })
+
     test('return an id and rev on create', async () => {
         const userCollection = new Collection(pouchDb, 'users', UserSchema)
 
