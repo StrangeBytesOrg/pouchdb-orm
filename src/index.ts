@@ -3,7 +3,7 @@
  * This library provides a collection wrapper for PouchDB documents validated by Zod schemas.
  */
 import type {z, ZodString} from 'zod'
-import type pouchDB from 'pouchdb'
+import pouchDB from 'pouchdb'
 
 /** A strongly-typed collection wrapper for PouchDB documents validated by Zod schemas. */
 export class Collection<T extends z.ZodSchema> {
@@ -73,11 +73,12 @@ export class Collection<T extends z.ZodSchema> {
     /**
      * Retrieves a single document by its ID and validates it against the collection's schema.
      * @param id - The unique identifier of the document to retrieve
+     * @param options - Additional options to pass to PouchDB's `get` method
      * @returns A promise that resolves to the validated document
      * @throws Will throw if the document doesn't exist or fails schema validation
      */
-    async findById(id: string): Promise<z.infer<T>> {
-        const doc = await this.database.get(id)
+    async findById(id: string, options: PouchDB.Core.GetOptions = {}): Promise<z.infer<T>> {
+        const doc = await this.database.get(id, options)
         return this.schema.parse(doc)
     }
 

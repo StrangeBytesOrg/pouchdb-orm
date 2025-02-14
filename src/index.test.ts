@@ -11,6 +11,18 @@ PouchDB.plugin(adapterMemory)
 const BaseSchema = z.object({
     _id: z.string(),
     _rev: z.string().optional(),
+    _attachments: z
+        .record(
+            z.object({
+                content_type: z.string(),
+                data: z.union([z.string(), z.instanceof(Buffer)]).optional(),
+                stub: z.boolean().optional(),
+                digest: z.string().optional(),
+                length: z.number().optional(),
+                revpos: z.number().optional(),
+            }),
+        )
+        .optional(),
 })
 const UserSchema = BaseSchema.extend({
     name: z.string(),
@@ -115,6 +127,49 @@ describe('document creation', () => {
         const doc = await pouchDb.get(id)
         // @ts-expect-error PouchDB doesn't have types for the $collection property
         expect(doc.$collection).toBe('users')
+    })
+
+    test('create a document with an attachment', async () => {
+        const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+        const {id, rev} = await userCollection.put({
+            _id: 'john-doe',
+            name: 'John Doe',
+            _attachments: {
+                'test.txt': {
+                    content_type: 'text/plain',
+                    data: btoa('hello world'),
+                },
+            },
+        })
+
+        const doc = await userCollection.findById('john-doe')
+        expect(doc).toHaveProperty('_attachments')
+
+        const attachment = await pouchDb.getAttachment(doc._id, 'test.txt')
+        expect(attachment).toBeInstanceOf(Buffer)
+        expect(attachment.toString()).toBe('hello world')
+    })
+
+    test('fetch documents with attachments', async () => {
+        const userCollection = new Collection(pouchDb, 'users', UserSchema)
+
+        const {id, rev} = await userCollection.put({
+            _id: 'john-doe',
+            name: 'John Doe',
+            _attachments: {
+                test: {
+                    content_type: 'text/plain',
+                    data: btoa('hello world'),
+                },
+            },
+        })
+
+        const doc = await userCollection.findById('john-doe', {attachments: true})
+        expect(doc).toHaveProperty('_attachments')
+        expect(doc._attachments).toHaveProperty('test')
+        // @ts-expect-error I can't think of a simple way to make TS happy here
+        expect(doc._attachments.test).toHaveProperty('data')
     })
 })
 
