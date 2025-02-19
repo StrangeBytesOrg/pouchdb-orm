@@ -13,13 +13,13 @@
     "author": "Strange Bytes",
     "license": "MIT",
     "description": "A simple ORM for validating and storing data in PouchDB",
-    "homepage": "https://github.com/StrangeBytesDev/pouchdb-orm",
+    "homepage": "https://github.com/StrangeBytesOrg/pouchdb-orm",
     "repository": {
         "type": "git",
-        "url": "https://github.com/StrangeBytesDev/pouchdb-orm.git"
+        "url": "https://github.com/StrangeBytesOrg/pouchdb-orm.git"
     },
     "bugs": {
-        "url": "https://github.com/StrangeBytesDev/pouchdb-orm/issues"
+        "url": "https://github.com/StrangeBytesOrg/pouchdb-orm/issues"
     },
     "devDependencies": {
         "@types/bun": "^1.2.2",
